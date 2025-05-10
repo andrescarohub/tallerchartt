@@ -1,3 +1,4 @@
+// infrastructure/repositories/BaseRepository.cs
 using System;
 using System.Collections.Generic;
 using MySqlConnector;
@@ -8,12 +9,13 @@ namespace tallerc.infrastructure.repositories
 {
     public abstract class BaseRepository<T> : IGenericRepository<T> where T : class
     {
-        protected readonly ConexionSingleton _db; // Renombrado para claridad, es la instancia del Singleton
+        // Volvemos a usar _conexion para la instancia del Singleton
+        protected readonly ConexionSingleton _conexion; 
         protected readonly string _tableName;
 
         protected BaseRepository(string tableName)
         {
-            _db = ConexionSingleton.Instance; // Obtiene la instancia del Singleton
+            _conexion = ConexionSingleton.Instance; // Obtiene la instancia del Singleton
             _tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         }
 
@@ -26,7 +28,7 @@ namespace tallerc.infrastructure.repositories
             {
                 string query = $"SELECT * FROM {_tableName}";
                 // ExecuteReader ahora maneja su propia conexión y la cierra.
-                using (var reader = _db.ExecuteReader(query))
+                using (var reader = _conexion.ExecuteReader(query)) // Usamos _conexion
                 {
                     while (reader.Read())
                     {
@@ -42,14 +44,15 @@ namespace tallerc.infrastructure.repositories
             }
         }
 
-        public virtual T? GetById(int id) // T? para indicar que puede ser null
+        // Asegúrate de que IGenericRepository.GetById devuelva T?
+        public virtual T? GetById(int id) 
         {
             try
             {
                 string query = $"SELECT * FROM {_tableName} WHERE Id = @Id";
                 MySqlParameter parameter = new MySqlParameter("@Id", id);
                 
-                using (var reader = _db.ExecuteReader(query, parameter))
+                using (var reader = _conexion.ExecuteReader(query, parameter)) // Usamos _conexion
                 {
                     if (reader.Read())
                     {
@@ -72,7 +75,7 @@ namespace tallerc.infrastructure.repositories
                 string query = $"SELECT COUNT(1) FROM {_tableName} WHERE Id = @Id";
                 MySqlParameter parameter = new MySqlParameter("@Id", id);
                 
-                var result = _db.ExecuteScalar(query, parameter); // Usa la versión sin transacción explícita
+                var result = _conexion.ExecuteScalar(query, parameter); // Usamos _conexion
                 return Convert.ToInt32(result) > 0;
             }
             catch (Exception ex)
@@ -82,8 +85,6 @@ namespace tallerc.infrastructure.repositories
             }
         }
 
-        // Add, Update, Delete siguen siendo abstractos porque son muy específicos
-        // y a menudo requieren manejo de transacciones que BaseRepository no impone.
         public abstract int Add(T entity);
         public abstract bool Update(T entity);
         public abstract bool Delete(int id);

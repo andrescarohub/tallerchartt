@@ -122,7 +122,7 @@ namespace tallerc.infrastructure.repositories
             MySqlTransaction transaction = null;
             try
             {
-                using (var connection = _conexion.GetConnection()) // Asegura que la conexión esté abierta
+                using (var connection = _conexion.GetNuevaConnection()) // Asegura que la conexión esté abierta
                 {
                     transaction = connection.BeginTransaction();
 
@@ -215,7 +215,7 @@ namespace tallerc.infrastructure.repositories
                 // Obtener la conexión y empezar la transacción
                 // Necesitas asegurar que _conexion.GetConnection() te da una conexión abierta
                 // o abrirla tú mismo.
-                using (var connection = _conexion.GetConnection()) // Asumiendo que GetConnection abre si es necesario
+                using (var connection = _conexion.GetNuevaConnection()) // Asumiendo que GetConnection abre si es necesario
                 {
                     transaction = connection.BeginTransaction();
 
@@ -321,26 +321,28 @@ namespace tallerc.infrastructure.repositories
                 }
             }
 
+           // ... dentro de public Compra? GetCompraConDetalles(int compraId) ...
             if (compra != null)
             {
-                // Cargar detalles usando DetalleCompraRepository (si lo tienes) o directamente
-                // Si tienes DetalleCompraRepository:
-                // var detalleRepo = new DetalleCompraRepository(); // O inyectado
-                // compra.Detalles = detalleRepo.GetByCompraId(compraId);
-
-                // O cargar directamente:
                 compra.Detalles = new List<DetalleCompra>();
-                string queryDetalles = "SELECT * FROM DetalleCompras WHERE CompraId = @CompraId";
+                string queryDetalles = "SELECT * FROM DetalleCompras WHERE CompraId = @CompraId"; // Asumiendo que tu tabla se llama DetalleCompras
                 var parameterDetalles = new MySqlParameter("@CompraId", compraId);
                 
-                // Asumiendo que DetalleCompraRepository tiene un MapToEntity estático o lo replicamos
-                var tempDetalleRepo = new DetalleCompraRepository(); // Solo para acceder a MapToEntity
-
                 using (var readerDetalles = _conexion.ExecuteReader(queryDetalles, parameterDetalles))
                 {
                     while (readerDetalles.Read())
                     {
-                        compra.Detalles.Add(tempDetalleRepo.MapToEntity(readerDetalles));
+                        // Mapear directamente aquí
+                        DetalleCompra detalle = new DetalleCompra
+                        {
+                            Id = Convert.ToInt32(readerDetalles["Id"]), // Ajusta los nombres de columna a tu tabla Detalle_Compra
+                            CompraId = Convert.ToInt32(readerDetalles["CompraId"]),
+                            ProductoId = Convert.ToInt32(readerDetalles["id_producto"]), // De tu esquema
+                            Cantidad = Convert.ToInt32(readerDetalles["cantidad"]),     // De tu esquema
+                            Valor = Convert.ToDecimal(readerDetalles["precio_unitario"]) // De tu esquema (este es el precio de compra unitario)
+                            // La propiedad Producto (el objeto completo) no se carga aquí, solo el ID.
+                        };
+                        compra.Detalles.Add(detalle);
                     }
                 }
             }
