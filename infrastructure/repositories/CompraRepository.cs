@@ -122,7 +122,7 @@ namespace tallerc.infrastructure.repositories
             MySqlTransaction transaction = null;
             try
             {
-                using (var connection = _conexion.GetNuevaConnection()) // Asegura que la conexión esté abierta
+                using (MySqlConnection connection = _conexion.GetNuevaConexion()) // Asegura que la conexión esté abierta
                 {
                     transaction = connection.BeginTransaction();
 
@@ -215,7 +215,7 @@ namespace tallerc.infrastructure.repositories
                 // Obtener la conexión y empezar la transacción
                 // Necesitas asegurar que _conexion.GetConnection() te da una conexión abierta
                 // o abrirla tú mismo.
-                using (var connection = _conexion.GetNuevaConnection()) // Asumiendo que GetConnection abre si es necesario
+               using (MySqlConnection connection = _conexion.GetNuevaConexion()) // Asumiendo que GetConnection abre si es necesario
                 {
                     transaction = connection.BeginTransaction();
 

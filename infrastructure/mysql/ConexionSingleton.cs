@@ -1,5 +1,6 @@
+// infrastructure/mysql/ConexionSingleton.cs
 using System;
-using System.Configuration; // Para App.config
+// using System.Configuration; // Puedes comentar esta línea si no tienes App.config y no quieres la advertencia al leerlo
 using MySqlConnector;
 using System.Data; // Para ConnectionState y CommandBehavior
 
@@ -13,19 +14,33 @@ namespace tallerc.infrastructure.mysql
 
         private ConexionSingleton()
         {
-            // Leer desde App.config (RECOMENDADO)
-            // _connectionString = ConfigurationManager.ConnectionStrings["MiConexionMySQL"]?.ConnectionString;
-            // if (string.IsNullOrEmpty(_connectionString))
+            string? appConfigConnectionString = null;
+            // La siguiente sección intenta leer de App.config. Si no existe o no se usa, está bien.
+            // try
             // {
-            //    _connectionString = "Server=localhost;Database=tallerdechart;User=root;Password=1234;"; // Fallback
-            //    Console.WriteLine("ADVERTENCIA: Usando cadena de conexión por defecto. Verifica tu App.config.");
+            //     appConfigConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings["MiConexionMySQL"]?.ConnectionString;
+            // }
+            // catch (Exception ex)
+            // {
+            //     Console.WriteLine($"ADVERTENCIA al leer App.config (puede ser normal si no se usa o si System.Configuration no está referenciado): {ex.Message}");
             // }
 
-            // Por ahora, mantenemos tu cadena hardcodeada para simplificar, pero considera el cambio.
-            _connectionString = "Server=localhost;Database=tallerdechart;User=root;Password=1234;";
+            if (!string.IsNullOrEmpty(appConfigConnectionString))
+            {
+                _connectionString = appConfigConnectionString;
+                Console.WriteLine($"INFO: Usando cadena de conexión de App.config: '{_connectionString}'");
+            }
+            else
+            {
+                // Cadena de conexión por defecto si App.config no se usa o no tiene la cadena
+                _connectionString = "Server=localhost;Database=tallerdechart;User=root;Password=1234;";
+                Console.WriteLine($"INFO: Usando cadena de conexión por defecto: '{_connectionString}'");
+            }
+
             if (string.IsNullOrEmpty(_connectionString))
             {
-                throw new InvalidOperationException("La cadena de conexión no puede ser nula o vacía.");
+                // Esta excepción no debería ocurrir si siempre tenemos la cadena por defecto como fallback.
+                throw new InvalidOperationException("La cadena de conexión no puede ser nula o vacía después de la inicialización.");
             }
         }
 
@@ -47,13 +62,9 @@ namespace tallerc.infrastructure.mysql
             }
         }
 
-        /// <summary>
-        /// Obtiene una NUEVA conexión abierta a la base de datos.
-        /// El llamador es responsable de cerrarla (idealmente usando un bloque 'using').
-        /// </summary>
-        /// <returns>Un nuevo objeto MySqlConnection abierto.</returns>
         public MySqlConnection GetNuevaConexion()
         {
+            Console.WriteLine($"DEBUG CONEXION: Intentando conectar con: '{_connectionString}'");
             try
             {
                 var connection = new MySqlConnection(_connectionString);
@@ -62,18 +73,20 @@ namespace tallerc.infrastructure.mysql
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al crear y abrir una nueva conexión: {ex.Message}");
-                throw; // Relanzar para que el llamador maneje el error.
+                Console.WriteLine($"ERROR MYSQL en GetNuevaConexion (cadena usada: '{_connectionString}'): {ex.Message}");
+                throw;
+            }
+            catch (Exception ex) // Captura general por si acaso
+            {
+                Console.WriteLine($"ERROR GENERAL en GetNuevaConexion (cadena usada: '{_connectionString}'): {ex.Message}");
+                throw;
             }
         }
 
-        // --- Métodos de Ejecución (ahora pueden operar con una conexión y transacción pasadas) ---
-
-        public int ExecuteNonQuery(string query, MySqlTransaction? transaction, params MySqlParameter[] parameters)
+        public int ExecuteNonQuery(string query, MySqlTransaction transaction, params MySqlParameter[] parameters)
         {
-            // Este método ahora requiere que la conexión venga de la transacción
-            if (transaction == null) throw new ArgumentNullException(nameof(transaction), "La transacción no puede ser nula para esta sobrecarga.");
-            if (transaction.Connection == null) throw new InvalidOperationException("La transacción no está asociada a una conexión.");
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction), "La transacción no puede ser nula para esta sobrecarga de ExecuteNonQuery.");
+            if (transaction.Connection == null) throw new InvalidOperationException("La transacción no está asociada a una conexión válida.");
             
             try
             {
@@ -85,35 +98,33 @@ namespace tallerc.infrastructure.mysql
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar NonQuery con transacción: {ex.Message}");
+                Console.WriteLine($"ERROR MYSQL en ExecuteNonQuery con transacción (Query: {query.Substring(0, Math.Min(query.Length, 100))}...): {ex.Message}");
                 throw;
             }
         }
 
-        // Sobrecarga para ejecutar sin una transacción explícita (usará su propia conexión)
         public int ExecuteNonQuery(string query, params MySqlParameter[] parameters)
         {
             try
             {
-                using (var conn = GetNuevaConexion()) // Obtiene una nueva conexión
+                using (var conn = GetNuevaConexion())
                 using (var cmd = new MySqlCommand(query, conn))
                 {
                     if (parameters != null) cmd.Parameters.AddRange(parameters);
                     return cmd.ExecuteNonQuery();
-                } // La conexión se cierra aquí automáticamente por el 'using'
+                }
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar NonQuery: {ex.Message}");
+                Console.WriteLine($"ERROR MYSQL en ExecuteNonQuery (Query: {query.Substring(0, Math.Min(query.Length, 100))}...): {ex.Message}");
                 throw;
             }
         }
 
-
-        public object? ExecuteScalar(string query, MySqlTransaction? transaction, params MySqlParameter[] parameters)
+        public object? ExecuteScalar(string query, MySqlTransaction transaction, params MySqlParameter[] parameters)
         {
-            if (transaction == null) throw new ArgumentNullException(nameof(transaction), "La transacción no puede ser nula para esta sobrecarga.");
-            if (transaction.Connection == null) throw new InvalidOperationException("La transacción no está asociada a una conexión.");
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction), "La transacción no puede ser nula para esta sobrecarga de ExecuteScalar.");
+            if (transaction.Connection == null) throw new InvalidOperationException("La transacción no está asociada a una conexión válida.");
 
             try
             {
@@ -125,7 +136,7 @@ namespace tallerc.infrastructure.mysql
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar Scalar con transacción: {ex.Message}");
+                Console.WriteLine($"ERROR MYSQL en ExecuteScalar con transacción (Query: {query.Substring(0, Math.Min(query.Length, 100))}...): {ex.Message}");
                 throw;
             }
         }
@@ -143,44 +154,31 @@ namespace tallerc.infrastructure.mysql
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar Scalar: {ex.Message}");
+                Console.WriteLine($"ERROR MYSQL en ExecuteScalar (Query: {query.Substring(0, Math.Min(query.Length, 100))}...): {ex.Message}");
                 throw;
             }
         }
 
-        /// <summary>
-        /// Ejecuta una consulta SQL que retorna un conjunto de resultados.
-        /// La conexión se cierra automáticamente cuando el DataReader es dispuesto si se usa CommandBehavior.CloseConnection.
-        /// </summary>
         public MySqlDataReader ExecuteReader(string query, params MySqlParameter[] parameters)
         {
-            // Este método DEBE devolver un DataReader que cierre su propia conexión.
             MySqlConnection? conn = null;
             try
             {
-                conn = GetNuevaConexion(); // Obtiene una nueva conexión
+                conn = GetNuevaConexion();
                 var cmd = new MySqlCommand(query, conn);
                 if (parameters != null)
                 {
                     cmd.Parameters.AddRange(parameters);
                 }
-                // IMPORTANTE: CommandBehavior.CloseConnection cierra la conexión cuando el reader se cierra.
                 return cmd.ExecuteReader(CommandBehavior.CloseConnection);
             }
             catch (MySqlException ex)
             {
-                conn?.Close(); // Intenta cerrar la conexión si falló antes de devolver el reader
+                conn?.Close();
                 conn?.Dispose();
-                Console.WriteLine($"Error al ejecutar Reader: {ex.Message}");
+                Console.WriteLine($"ERROR MYSQL en ExecuteReader (Query: {query.Substring(0, Math.Min(query.Length, 100))}...): {ex.Message}");
                 throw;
             }
         }
-        
-        // El BeginTransaction() original que tenías ya no es necesario aquí si cada
-        // repositorio obtiene una nueva conexión para su transacción.
-        // El repositorio haría:
-        // using (var conn = ConexionSingleton.Instance.GetNuevaConexion())
-        // using (var transaction = conn.BeginTransaction())
-        // { ... }
     }
 }

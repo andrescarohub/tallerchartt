@@ -11,7 +11,7 @@ namespace tallerc.infrastructure.repositories
     public class ProductoRepository : BaseRepository<Producto>, IProductoRepository
 #pragma warning restore CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).
     {
-        public ProductoRepository() : base("Productos") { }
+        public ProductoRepository() : base("Producto") { }
 
         protected override Producto MapToEntity(MySqlDataReader reader)
         {
