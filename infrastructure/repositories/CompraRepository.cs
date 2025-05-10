@@ -209,7 +209,7 @@ namespace tallerc.infrastructure.repositories
 
         public int AddCompraConDetalles(Compra compra)
         {
-            MySqlTransaction transaction = null;
+            MySqlTransaction? transaction = null;
             try
             {
                 // Obtener la conexión y empezar la transacción
@@ -309,7 +309,7 @@ namespace tallerc.infrastructure.repositories
         public Compra? GetCompraConDetalles(int compraId)
 #pragma warning restore CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).
         {
-            Compra compra = null;
+            Compra? compra = null;
             string queryCompra = "SELECT * FROM Compras WHERE Id = @Id";
             var parameterCompra = new MySqlParameter("@Id", compraId);
 

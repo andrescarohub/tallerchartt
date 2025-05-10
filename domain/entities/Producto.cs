@@ -63,6 +63,7 @@ namespace tallerc.domain.entities
         /// </summary>
         public Producto()
         {
+             Nombre = string.Empty; // <--- AÑADE ESTO O UN VALOR INICIAL
             StockActual = 0;
             CreatedAt = DateTime.Now;
             UpdatedAt = DateTime.Now;

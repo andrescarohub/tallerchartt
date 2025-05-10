@@ -12,9 +12,9 @@ namespace tallerc
     static class Program
     {
         // Declaramos los servicios aquí para que sean accesibles por los métodos del menú
-        private static TerceroService _terceroService;
-        private static ProductoService _productoService;
-        private static CompraService _compraService;
+        private static TerceroService?  _terceroService;
+        private static ProductoService?  _productoService;
+        private static CompraService? _compraService;
         // private static VentaService _ventaService; // Cuando lo implementemos
         // private static CajaService _cajaService; // Cuando lo implementemos
         // private static PlanPromocionalService _planPromocionalService; // Cuando lo implementemos
