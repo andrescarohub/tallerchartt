@@ -1,51 +1,32 @@
 using System;
 using System.Collections.Generic;
 using MySqlConnector;
-using tallerc.domain.repositories;
+using tallerc.domain.repositories; // Asegúrate que IGenericRepository está aquí
 using tallerc.infrastructure.mysql;
 
 namespace tallerc.infrastructure.repositories
 {
-    /// <summary>
-    /// Clase base para los repositorios que proporciona funcionalidad común
-    /// </summary>
-    /// <typeparam name="T">Tipo de entidad con la que trabaja el repositorio</typeparam>
     public abstract class BaseRepository<T> : IGenericRepository<T> where T : class
     {
-        // Protegido para que las clases derivadas puedan utilizarlo
-        protected readonly ConexionSingleton _conexion;
-        
-        // Nombre de la tabla en la base de datos
+        protected readonly ConexionSingleton _db; // Renombrado para claridad, es la instancia del Singleton
         protected readonly string _tableName;
 
-        /// <summary>
-        /// Constructor que inicializa la conexión a la base de datos y el nombre de la tabla
-        /// </summary>
-        /// <param name="tableName">Nombre de la tabla en la base de datos</param>
         protected BaseRepository(string tableName)
         {
-            _conexion = ConexionSingleton.Instance;
+            _db = ConexionSingleton.Instance; // Obtiene la instancia del Singleton
             _tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         }
 
-        /// <summary>
-        /// Método abstracto para mapear un MySqlDataReader a una entidad T
-        /// </summary>
-        /// <param name="reader">Objeto MySqlDataReader con los datos</param>
-        /// <returns>Entidad T creada a partir de los datos</returns>
         protected abstract T MapToEntity(MySqlDataReader reader);
 
-        /// <summary>
-        /// Obtiene todas las entidades de la tabla
-        /// </summary>
-        /// <returns>Lista de entidades</returns>
         public virtual List<T> GetAll()
         {
             List<T> entities = new List<T>();
             try
             {
                 string query = $"SELECT * FROM {_tableName}";
-                using (var reader = _conexion.ExecuteReader(query))
+                // ExecuteReader ahora maneja su propia conexión y la cierra.
+                using (var reader = _db.ExecuteReader(query))
                 {
                     while (reader.Read())
                     {
@@ -56,24 +37,19 @@ namespace tallerc.infrastructure.repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error en GetAll: {ex.Message}");
-                throw;
+                Console.WriteLine($"Error en BaseRepository.GetAll para {_tableName}: {ex.Message}");
+                throw; // O manejar de otra forma
             }
         }
 
-        /// <summary>
-        /// Obtiene una entidad por su ID
-        /// </summary>
-        /// <param name="id">ID de la entidad</param>
-        /// <returns>Entidad encontrada o null</returns>
-        public virtual T? GetById(int id)
+        public virtual T? GetById(int id) // T? para indicar que puede ser null
         {
             try
             {
                 string query = $"SELECT * FROM {_tableName} WHERE Id = @Id";
                 MySqlParameter parameter = new MySqlParameter("@Id", id);
                 
-                using (var reader = _conexion.ExecuteReader(query, parameter))
+                using (var reader = _db.ExecuteReader(query, parameter))
                 {
                     if (reader.Read())
                     {
@@ -84,16 +60,11 @@ namespace tallerc.infrastructure.repositories
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error en GetById: {ex.Message}");
+                Console.WriteLine($"Error en BaseRepository.GetById para {_tableName}: {ex.Message}");
                 throw;
             }
         }
 
-        /// <summary>
-        /// Verifica si existe una entidad con el ID especificado
-        /// </summary>
-        /// <param name="id">ID a verificar</param>
-        /// <returns>True si existe, False en caso contrario</returns>
         public virtual bool Exists(int id)
         {
             try
@@ -101,18 +72,18 @@ namespace tallerc.infrastructure.repositories
                 string query = $"SELECT COUNT(1) FROM {_tableName} WHERE Id = @Id";
                 MySqlParameter parameter = new MySqlParameter("@Id", id);
                 
-                var result = _conexion.ExecuteScalar(query, parameter);
+                var result = _db.ExecuteScalar(query, parameter); // Usa la versión sin transacción explícita
                 return Convert.ToInt32(result) > 0;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error en Exists: {ex.Message}");
+                Console.WriteLine($"Error en BaseRepository.Exists para {_tableName}: {ex.Message}");
                 throw;
             }
         }
 
-        // Los métodos Add, Update y Delete deben implementarse en las clases derivadas
-        // ya que dependen de la estructura específica de cada entidad
+        // Add, Update, Delete siguen siendo abstractos porque son muy específicos
+        // y a menudo requieren manejo de transacciones que BaseRepository no impone.
         public abstract int Add(T entity);
         public abstract bool Update(T entity);
         public abstract bool Delete(int id);

@@ -20,7 +20,7 @@ namespace tallerc.domain.repositories
         /// </summary>
         /// <param name="id">Identificador de la entidad</param>
         /// <returns>Entidad encontrada o null si no existe</returns>
-        T GetById(int id);
+        T? GetById(int id);
 
         /// <summary>
         /// Agrega una nueva entidad

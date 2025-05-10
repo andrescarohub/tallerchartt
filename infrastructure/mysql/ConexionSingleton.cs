@@ -1,43 +1,38 @@
 using System;
+using System.Configuration; // Para App.config
 using MySqlConnector;
+using System.Data; // Para ConnectionState y CommandBehavior
 
 namespace tallerc.infrastructure.mysql
 {
-    /// <summary>
-    /// Implementación del patrón Singleton para la conexión a la base de datos MySQL.
-    /// Garantiza que solo exista una instancia de la conexión en toda la aplicación.
-    /// </summary>
     public sealed class ConexionSingleton
     {
-        // Instancia única
         private static ConexionSingleton? _instance;
-        
-        // Objeto de conexión a MySQL
-        private MySqlConnection _connection;
-        
-        // String de conexión
         private readonly string _connectionString;
-        
-        // Objeto de bloqueo para garantizar la creación segura en entornos multi-hilo
         private static readonly object _lock = new object();
 
-        /// <summary>
-        /// Constructor privado para evitar instanciación directa
-        /// </summary>
         private ConexionSingleton()
         {
+            // Leer desde App.config (RECOMENDADO)
+            // _connectionString = ConfigurationManager.ConnectionStrings["MiConexionMySQL"]?.ConnectionString;
+            // if (string.IsNullOrEmpty(_connectionString))
+            // {
+            //    _connectionString = "Server=localhost;Database=tallerdechart;User=root;Password=1234;"; // Fallback
+            //    Console.WriteLine("ADVERTENCIA: Usando cadena de conexión por defecto. Verifica tu App.config.");
+            // }
+
+            // Por ahora, mantenemos tu cadena hardcodeada para simplificar, pero considera el cambio.
             _connectionString = "Server=localhost;Database=tallerdechart;User=root;Password=1234;";
-            _connection = new MySqlConnection(_connectionString);
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                throw new InvalidOperationException("La cadena de conexión no puede ser nula o vacía.");
+            }
         }
 
-        /// <summary>
-        /// Obtiene la instancia única de la conexión (Singleton)
-        /// </summary>
         public static ConexionSingleton Instance
         {
             get
             {
-                // Doble verificación para mejorar el rendimiento
                 if (_instance == null)
                 {
                     lock (_lock)
@@ -53,139 +48,139 @@ namespace tallerc.infrastructure.mysql
         }
 
         /// <summary>
-        /// Obtiene la conexión a la base de datos
+        /// Obtiene una NUEVA conexión abierta a la base de datos.
+        /// El llamador es responsable de cerrarla (idealmente usando un bloque 'using').
         /// </summary>
-        /// <returns>Objeto MySqlConnection activo</returns>
-        public MySqlConnection GetConnection()
+        /// <returns>Un nuevo objeto MySqlConnection abierto.</returns>
+        public MySqlConnection GetNuevaConexion()
         {
             try
             {
-                // Si la conexión está cerrada, abrirla
-                if (_connection.State != System.Data.ConnectionState.Open)
-                {
-                    _connection.Open();
-                }
-                return _connection;
+                var connection = new MySqlConnection(_connectionString);
+                connection.Open();
+                return connection;
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al conectar a la base de datos: {ex.Message}");
-                throw;
+                Console.WriteLine($"Error al crear y abrir una nueva conexión: {ex.Message}");
+                throw; // Relanzar para que el llamador maneje el error.
             }
         }
 
-        /// <summary>
-        /// Cierra la conexión a la base de datos si está abierta
-        /// </summary>
-        public void CloseConnection()
-        {
-            try
-            {
-                if (_connection != null && _connection.State == System.Data.ConnectionState.Open)
-                {
-                    _connection.Close();
-                }
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine($"Error al cerrar la conexión: {ex.Message}");
-                throw;
-            }
-        }
+        // --- Métodos de Ejecución (ahora pueden operar con una conexión y transacción pasadas) ---
 
-        /// <summary>
-        /// Ejecuta una consulta SQL que no retorna datos (INSERT, UPDATE, DELETE)
-        /// </summary>
-        /// <param name="query">Consulta SQL a ejecutar</param>
-        /// <param name="parameters">Parámetros para la consulta</param>
-        /// <returns>Número de filas afectadas</returns>
-        public int ExecuteNonQuery(string query, params MySqlParameter[] parameters)
+        public int ExecuteNonQuery(string query, MySqlTransaction? transaction, params MySqlParameter[] parameters)
         {
+            // Este método ahora requiere que la conexión venga de la transacción
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction), "La transacción no puede ser nula para esta sobrecarga.");
+            if (transaction.Connection == null) throw new InvalidOperationException("La transacción no está asociada a una conexión.");
+            
             try
             {
-                using (var cmd = new MySqlCommand(query, GetConnection()))
+                using (var cmd = new MySqlCommand(query, transaction.Connection, transaction))
                 {
-                    if (parameters != null)
-                    {
-                        cmd.Parameters.AddRange(parameters);
-                    }
+                    if (parameters != null) cmd.Parameters.AddRange(parameters);
                     return cmd.ExecuteNonQuery();
                 }
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar consulta: {ex.Message}");
+                Console.WriteLine($"Error al ejecutar NonQuery con transacción: {ex.Message}");
                 throw;
             }
         }
 
-        /// <summary>
-        /// Ejecuta una consulta SQL que retorna un único valor
-        /// </summary>
-        /// <param name="query">Consulta SQL a ejecutar</param>
-        /// <param name="parameters">Parámetros para la consulta</param>
-        /// <returns>Resultado de la consulta</returns>
-        public object ExecuteScalar(string query, params MySqlParameter[] parameters)
+        // Sobrecarga para ejecutar sin una transacción explícita (usará su propia conexión)
+        public int ExecuteNonQuery(string query, params MySqlParameter[] parameters)
         {
             try
             {
-                using (var cmd = new MySqlCommand(query, GetConnection()))
+                using (var conn = GetNuevaConexion()) // Obtiene una nueva conexión
+                using (var cmd = new MySqlCommand(query, conn))
                 {
-                    if (parameters != null)
-                    {
-                        cmd.Parameters.AddRange(parameters);
-                    }
-#pragma warning disable CS8603 // Possible null reference return.
+                    if (parameters != null) cmd.Parameters.AddRange(parameters);
+                    return cmd.ExecuteNonQuery();
+                } // La conexión se cierra aquí automáticamente por el 'using'
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine($"Error al ejecutar NonQuery: {ex.Message}");
+                throw;
+            }
+        }
+
+
+        public object? ExecuteScalar(string query, MySqlTransaction? transaction, params MySqlParameter[] parameters)
+        {
+            if (transaction == null) throw new ArgumentNullException(nameof(transaction), "La transacción no puede ser nula para esta sobrecarga.");
+            if (transaction.Connection == null) throw new InvalidOperationException("La transacción no está asociada a una conexión.");
+
+            try
+            {
+                using (var cmd = new MySqlCommand(query, transaction.Connection, transaction))
+                {
+                    if (parameters != null) cmd.Parameters.AddRange(parameters);
                     return cmd.ExecuteScalar();
-#pragma warning restore CS8603 // Possible null reference return.
                 }
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar consulta: {ex.Message}");
+                Console.WriteLine($"Error al ejecutar Scalar con transacción: {ex.Message}");
+                throw;
+            }
+        }
+
+        public object? ExecuteScalar(string query, params MySqlParameter[] parameters)
+        {
+            try
+            {
+                using (var conn = GetNuevaConexion())
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    if (parameters != null) cmd.Parameters.AddRange(parameters);
+                    return cmd.ExecuteScalar();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine($"Error al ejecutar Scalar: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// Ejecuta una consulta SQL que retorna un conjunto de resultados
+        /// Ejecuta una consulta SQL que retorna un conjunto de resultados.
+        /// La conexión se cierra automáticamente cuando el DataReader es dispuesto si se usa CommandBehavior.CloseConnection.
         /// </summary>
-        /// <param name="query">Consulta SQL a ejecutar</param>
-        /// <param name="parameters">Parámetros para la consulta</param>
-        /// <returns>Objeto MySqlDataReader con los resultados</returns>
         public MySqlDataReader ExecuteReader(string query, params MySqlParameter[] parameters)
         {
+            // Este método DEBE devolver un DataReader que cierre su propia conexión.
+            MySqlConnection? conn = null;
             try
             {
-                var cmd = new MySqlCommand(query, GetConnection());
+                conn = GetNuevaConexion(); // Obtiene una nueva conexión
+                var cmd = new MySqlCommand(query, conn);
                 if (parameters != null)
                 {
                     cmd.Parameters.AddRange(parameters);
                 }
-                return cmd.ExecuteReader();
+                // IMPORTANTE: CommandBehavior.CloseConnection cierra la conexión cuando el reader se cierra.
+                return cmd.ExecuteReader(CommandBehavior.CloseConnection);
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine($"Error al ejecutar consulta: {ex.Message}");
+                conn?.Close(); // Intenta cerrar la conexión si falló antes de devolver el reader
+                conn?.Dispose();
+                Console.WriteLine($"Error al ejecutar Reader: {ex.Message}");
                 throw;
             }
         }
-
-        /// <summary>
-        /// Inicia una transacción en la base de datos
-        /// </summary>
-        /// <returns>Objeto MySqlTransaction</returns>
-        public MySqlTransaction BeginTransaction()
-        {
-            try
-            {
-                return GetConnection().BeginTransaction();
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine($"Error al iniciar transacción: {ex.Message}");
-                throw;
-            }
-        }
+        
+        // El BeginTransaction() original que tenías ya no es necesario aquí si cada
+        // repositorio obtiene una nueva conexión para su transacción.
+        // El repositorio haría:
+        // using (var conn = ConexionSingleton.Instance.GetNuevaConexion())
+        // using (var transaction = conn.BeginTransaction())
+        // { ... }
     }
 }
