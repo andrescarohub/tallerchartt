@@ -177,7 +177,3 @@ namespace tallerc.infrastructure.repositories
         public List<Tercero> GetEmpleados() => GetByTipo(3);   // 3 = Empleado
     }
 }
-
-
-
-
