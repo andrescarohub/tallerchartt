@@ -12,7 +12,7 @@ namespace tallerc.infrastructure.repositories
 #pragma warning restore CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).
     {
         // Para DetalleCompra, el nombre de la tabla es crucial
-        public DetalleCompraRepository() : base("DetalleCompras") { } // O como se llame tu tabla
+        public DetalleCompraRepository() : base("DetalleCompra") { } // O como se llame tu tabla
 
         protected override DetalleCompra MapToEntity(MySqlDataReader reader)
         {
@@ -38,7 +38,7 @@ namespace tallerc.infrastructure.repositories
             try
             {
                 string query = @"
-                    INSERT INTO DetalleCompras (CompraId, ProductoId, Cantidad, Valor) 
+                    INSERT INTO DetalleCompra (CompraId, ProductoId, Cantidad, Valor) 
                     VALUES (@CompraId, @ProductoId, @Cantidad, @Valor);
                     SELECT LAST_INSERT_ID();";
 
@@ -66,7 +66,7 @@ namespace tallerc.infrastructure.repositories
             try
             {
                 string query = @"
-                    UPDATE DetalleCompras SET 
+                    UPDATE DetalleCompra SET 
                         ProductoId = @ProductoId, 
                         Cantidad = @Cantidad, 
                         Valor = @Valor 
@@ -95,7 +95,7 @@ namespace tallerc.infrastructure.repositories
             // Eliminar detalles individuales. Podrías necesitar DeleteByCompraId.
             try
             {
-                string query = "DELETE FROM DetalleCompras WHERE Id = @Id";
+                string query = "DELETE FROM DetalleCompra WHERE Id = @Id";
                 var parameter = new MySqlParameter("@Id", id);
                 int rowsAffected = _conexion.ExecuteNonQuery(query, parameter);
                 return rowsAffected > 0;
@@ -110,7 +110,7 @@ namespace tallerc.infrastructure.repositories
         public List<DetalleCompra> GetByCompraId(int compraId)
         {
             var detalles = new List<DetalleCompra>();
-            string query = "SELECT * FROM DetalleCompras WHERE CompraId = @CompraId";
+            string query = "SELECT * FROM DetalleCompra WHERE CompraId = @CompraId";
             var parameter = new MySqlParameter("@CompraId", compraId);
 
             using (var reader = _conexion.ExecuteReader(query, parameter))

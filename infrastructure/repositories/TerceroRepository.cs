@@ -10,7 +10,7 @@ namespace tallerc.infrastructure.repositories
     public class TerceroRepository : BaseRepository<Tercero>, ITerceroRepository
 #pragma warning restore CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).
     {
-        public TerceroRepository() : base("Terceros") { }
+        public TerceroRepository() : base("Tercero") { }
 
         // Mapea un registro de la DB a un objeto Tercero
         protected override Tercero MapToEntity(MySqlDataReader reader)
@@ -38,7 +38,7 @@ namespace tallerc.infrastructure.repositories
             try
             {
                 string query = @"
-                    INSERT INTO Terceros 
+                    INSERT INTO Tercero
                         (Nombre, Apellido, Email, NumeroDocumento, TipoDocumentoId, TipoTerceroId, CiudadId, CreatedAt, UpdatedAt)
                     VALUES 
                         (@Nombre, @Apellido, @Email, @NumeroDocumento, @TipoDocumentoId, @TipoTerceroId, @CiudadId, @CreatedAt, @UpdatedAt);
@@ -72,7 +72,7 @@ namespace tallerc.infrastructure.repositories
             try
             {
                 string query = @"
-                    UPDATE Terceros SET
+                    UPDATE Tercero SET
                         Nombre = @Nombre,
                         Apellido = @Apellido,
                         Email = @Email,
@@ -110,7 +110,7 @@ namespace tallerc.infrastructure.repositories
         {
             try
             {
-                string query = "DELETE FROM Terceros WHERE Id = @Id";
+                string query = "DELETE FROM Tercero WHERE Id = @Id";
                 var parameter = new MySqlParameter("@Id", id);
                 
                 int rowsAffected = _conexion.ExecuteNonQuery(query, parameter);
@@ -127,7 +127,7 @@ namespace tallerc.infrastructure.repositories
         public List<Tercero> GetByTipo(int tipoTerceroId)
         {
             var terceros = new List<Tercero>();
-            string query = "SELECT * FROM Terceros WHERE TipoTerceroId = @TipoTerceroId";
+            string query = "SELECT * FROM Tercero WHERE TipoTerceroId = @TipoTerceroId";
             var parameter = new MySqlParameter("@TipoTerceroId", tipoTerceroId);
 
             using (var reader = _conexion.ExecuteReader(query, parameter))
@@ -143,7 +143,7 @@ namespace tallerc.infrastructure.repositories
         public List<Tercero> SearchByNombre(string nombre)
         {
             var terceros = new List<Tercero>();
-            string query = "SELECT * FROM Terceros WHERE Nombre LIKE @Nombre OR Apellido LIKE @Nombre";
+            string query = "SELECT * FROM Tercero WHERE Nombre LIKE @Nombre OR Apellido LIKE @Nombre";
             var parameter = new MySqlParameter("@Nombre", $"%{nombre}%");
 
             using (var reader = _conexion.ExecuteReader(query, parameter))
@@ -160,7 +160,7 @@ namespace tallerc.infrastructure.repositories
         public Tercero? GetByDocumento(string numeroDocumento)
 #pragma warning restore CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).
         {
-            string query = "SELECT * FROM Terceros WHERE NumeroDocumento = @NumeroDocumento";
+            string query = "SELECT * FROM Tercero WHERE NumeroDocumento = @NumeroDocumento";
             var parameter = new MySqlParameter("@NumeroDocumento", numeroDocumento);
 
             using (var reader = _conexion.ExecuteReader(query, parameter))

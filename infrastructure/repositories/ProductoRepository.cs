@@ -40,7 +40,7 @@ namespace tallerc.infrastructure.repositories
             try
             {
                 string query = @"
-                    INSERT INTO Productos 
+                    INSERT INTO Producto 
                         (Nombre, StockActual, StockMinimo, StockMaximo, Barcode, PrecioUnitario, CategoriaId, CreatedAt, UpdatedAt)
                     VALUES 
                         (@Nombre, @StockActual, @StockMinimo, @StockMaximo, @Barcode, @PrecioUnitario, @CategoriaId, @CreatedAt, @UpdatedAt);
@@ -75,7 +75,7 @@ namespace tallerc.infrastructure.repositories
             try
             {
                 string query = @"
-                    UPDATE Productos SET
+                    UPDATE Producto SET
                         Nombre = @Nombre,
                         StockActual = @StockActual,
                         StockMinimo = @StockMinimo,
@@ -115,7 +115,7 @@ namespace tallerc.infrastructure.repositories
             // si hay dependencias (ej. productos en ventas históricas).
             try
             {
-                string query = "DELETE FROM Productos WHERE Id = @Id";
+                string query = "DELETE FROM Producto WHERE Id = @Id";
                 var parameter = new MySqlParameter("@Id", id);
                 
                 int rowsAffected = _conexion.ExecuteNonQuery(query, parameter);
@@ -134,7 +134,7 @@ namespace tallerc.infrastructure.repositories
             var productos = new List<Producto>();
             // La entidad Producto tiene RequiereReposicion() que compara StockActual con StockMinimo
             // Podríamos hacer el filtro en la BD para eficiencia
-            string query = "SELECT * FROM Productos WHERE StockActual < StockMinimo";
+            string query = "SELECT * FROM Producto WHERE StockActual < StockMinimo";
             
             using (var reader = _conexion.ExecuteReader(query))
             {
@@ -152,7 +152,7 @@ namespace tallerc.infrastructure.repositories
             // El '+' y '-' se hacen en la consulta para asegurar atomicidad a nivel de DB.
             try
             {
-                string query = "UPDATE Productos SET StockActual = StockActual + @Cantidad, UpdatedAt = @UpdatedAt WHERE Id = @ProductoId";
+                string query = "UPDATE Producto SET StockActual = StockActual + @Cantidad, UpdatedAt = @UpdatedAt WHERE Id = @ProductoId";
                 var parameters = new MySqlParameter[]
                 {
                     new MySqlParameter("@Cantidad", cantidad),
@@ -179,7 +179,7 @@ namespace tallerc.infrastructure.repositories
             string query = @"
                 SELECT p.* 
                 FROM Productos p
-                INNER JOIN PlanPromocionalProductos ppp ON p.Id = ppp.ProductoId
+                INNER JOIN PlanPromocionalProducto ppp ON p.Id = ppp.ProductoId
                 WHERE ppp.PlanPromocionalId = @PlanId";
             var parameter = new MySqlParameter("@PlanId", planId);
 
