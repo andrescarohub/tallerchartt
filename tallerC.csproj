@@ -2,13 +2,22 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework> <!-- Confirma .NET 8 -->
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Esto NO tiene que ver con la conexión a la BD directamente -->
+    <!-- pero sí con características modernas de C# -->
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MysqlConnector" Version="2.4.0" />
+    <PackageReference Include="MysqlConnector" Version="2.4.0" /> <!-- BIEN -->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
   </ItemGroup>
 
+  <!-- SI USAS App.config, A VECES SE AÑADE ESTO (aunque la propiedad de copia suele ser suficiente): -->
+   <ItemGroup>
+    <None Update="App.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup> 
 </Project>

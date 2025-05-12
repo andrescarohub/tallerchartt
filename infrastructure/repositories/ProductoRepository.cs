@@ -178,7 +178,7 @@ namespace tallerc.infrastructure.repositories
             var productos = new List<Producto>();
             string query = @"
                 SELECT p.* 
-                FROM Productos p
+                FROM Producto p
                 INNER JOIN PlanPromocionalProducto ppp ON p.Id = ppp.ProductoId
                 WHERE ppp.PlanPromocionalId = @PlanId";
             var parameter = new MySqlParameter("@PlanId", planId);
@@ -196,7 +196,7 @@ namespace tallerc.infrastructure.repositories
         public List<Producto> Search(string texto)
         {
             var productos = new List<Producto>();
-            string query = "SELECT * FROM Productos WHERE Nombre LIKE @Texto OR Barcode LIKE @Texto";
+            string query = "SELECT * FROM Producto WHERE Nombre LIKE @Texto OR Barcode LIKE @Texto";
             var parameter = new MySqlParameter("@Texto", $"%{texto}%");
 
             using (var reader = _conexion.ExecuteReader(query, parameter))
@@ -213,7 +213,7 @@ namespace tallerc.infrastructure.repositories
         public Producto? GetByBarcode(string barcode)
 #pragma warning restore CS8766 // Nullability of reference types in return type doesn't match implicitly implemented member (possibly because of nullability attributes).
         {
-            string query = "SELECT * FROM Productos WHERE Barcode = @Barcode";
+            string query = "SELECT * FROM Producto WHERE Barcode = @Barcode";
             var parameter = new MySqlParameter("@Barcode", barcode);
 
             using (var reader = _conexion.ExecuteReader(query, parameter))

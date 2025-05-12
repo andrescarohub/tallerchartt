@@ -60,6 +60,10 @@ namespace tallerc.domain.services
 
             return _terceroRepository.SearchByNombre(searchTerm);
         }
+                    public List<Tercero> GetByTipo(int tipoTerceroId)
+            {
+                return _terceroRepository.GetByTipo(tipoTerceroId);
+            }
 
         /// <summary>
         /// Obtiene un tercero por su ID
