@@ -63,7 +63,7 @@ namespace tallerc.domain.services
         /// </summary>
         /// <param name="id">ID de la compra</param>
         /// <returns>Compra con sus detalles o null</returns>
-        public Compra GetCompraById(int id)
+        public Compra? GetCompraById(int id)
         {
             if (id <= 0)
                 return null;

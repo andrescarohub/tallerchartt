@@ -45,7 +45,9 @@ namespace tallerc.domain.entities
         /// <summary>
         /// Constructor por defecto
         /// </summary>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         public DetalleCompra()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         {
             Cantidad = 1;
             Valor = 0;
@@ -57,7 +59,9 @@ namespace tallerc.domain.entities
         /// <param name="productoId">ID del producto</param>
         /// <param name="cantidad">Cantidad de unidades</param>
         /// <param name="valor">Valor unitario</param>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         public DetalleCompra(int productoId, int cantidad, decimal valor)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         {
             ProductoId = productoId;
             Cantidad = cantidad;

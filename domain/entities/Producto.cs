@@ -61,7 +61,9 @@ namespace tallerc.domain.entities
         /// <summary>
         /// Constructor por defecto
         /// </summary>
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         public Producto()
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         {
              Nombre = string.Empty; // <--- AÑADE ESTO O UN VALOR INICIAL
             StockActual = 0;

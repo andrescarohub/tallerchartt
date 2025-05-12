@@ -154,7 +154,9 @@ namespace tallerc
         {
             Console.Clear();
             Console.WriteLine("--- Listado de Productos ---");
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             var productos = _productoService.GetAllProductos();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             if (productos.Any())
             {
                 Console.WriteLine("ID | Nombre                     | Stock | Precio Unit.");
@@ -195,6 +197,7 @@ namespace tallerc
                 string barcode = Console.ReadLine() ?? "";
 
 
+#pragma warning disable CS8601 // Possible null reference assignment.
                 Producto nuevoProducto = new Producto
                 {
                     Nombre = nombre,
@@ -204,9 +207,12 @@ namespace tallerc
                     StockMaximo = stockMax,
                     Barcode = string.IsNullOrWhiteSpace(barcode) ? null : barcode
                 };
+#pragma warning restore CS8601 // Possible null reference assignment.
 
                 // Validaciones del servicio (EsValido, duplicado por barcode) se ejecutan dentro de CreateProducto
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 int productoId = _productoService.CreateProducto(nuevoProducto);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
                 if (productoId > 0)
                 {
@@ -277,7 +283,9 @@ namespace tallerc
                 Console.Write("ID del Proveedor: ");
                 int proveedorId = int.Parse(Console.ReadLine() ?? "0");
                 // Validar que el proveedor exista y sea tipo proveedor
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 var proveedor = _terceroService.GetTerceroById(proveedorId);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 if (proveedor == null || proveedor.TipoTerceroId != 2) // Asumiendo 2 es Proveedor
                 {
                     Console.WriteLine("Proveedor no válido o no encontrado.");
@@ -318,7 +326,9 @@ namespace tallerc
                         continue;
                     }
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                     var producto = _productoService.GetProductoById(productoId);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                     if (producto == null)
                     {
                         Console.WriteLine("Producto no encontrado.");
@@ -345,7 +355,9 @@ namespace tallerc
                 }
                 nuevaCompra.Detalles = detalles;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 int compraId = _compraService.CreateCompra(nuevaCompra); // CreateCompra actualiza stock
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 if (compraId > 0)
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
@@ -377,7 +389,9 @@ namespace tallerc
         {
             Console.Clear();
             Console.WriteLine("--- Listado de Compras ---");
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             var compras = _compraService.GetAllCompras(); // Este GetAll no carga detalles por defecto
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             if (compras.Any())
             {
                 Console.WriteLine("ID | Fecha      | ProveedorID | EmpleadoID | Factura #   | Estado");

@@ -59,7 +59,9 @@ namespace tallerc.domain.services
         /// <returns>Producto encontrado o null</returns>
         public Producto GetProductoById(int id)
         {
+#pragma warning disable CS8603 // Possible null reference return.
             return _productoRepository.GetById(id);
+#pragma warning restore CS8603 // Possible null reference return.
         }
 
         /// <summary>
@@ -67,7 +69,7 @@ namespace tallerc.domain.services
         /// </summary>
         /// <param name="barcode">Código de barras</param>
         /// <returns>Producto encontrado o null</returns>
-        public Producto GetProductoByBarcode(string barcode)
+        public Producto? GetProductoByBarcode(string barcode)
         {
             if (string.IsNullOrWhiteSpace(barcode))
                 return null;

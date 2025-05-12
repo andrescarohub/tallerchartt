@@ -68,7 +68,9 @@ namespace tallerc.domain.services
         /// <returns>Tercero encontrado o null</returns>
         public Tercero GetTerceroById(int id)
         {
+#pragma warning disable CS8603 // Possible null reference return.
             return _terceroRepository.GetById(id);
+#pragma warning restore CS8603 // Possible null reference return.
         }
 
         /// <summary>
